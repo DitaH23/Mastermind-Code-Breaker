@@ -1,0 +1,5 @@
+{
+  "name": "Mastermind Code Breaker",
+  "description": "A classic code-breaking game of logic and deduction. Players must guess a secret 5-color code within 12 attempts, using feedback pegs (black for correct color and position, white for correct color only) to refine their strategy.",
+  "requestFramePermissions": []
+}
