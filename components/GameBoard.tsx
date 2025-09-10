@@ -8,8 +8,7 @@ interface GameBoardProps {
   guesses: Guess[];
   currentGuess: (string | null)[];
   activeRowIndex: number;
-  selectedPegIndex: number | null;
-  onPegClick: (pegIndex: number) => void;
+  onPegColorChange: (pegIndex: number, color: string) => void;
   gameState: GameState;
 }
 
@@ -17,8 +16,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
   guesses, 
   currentGuess, 
   activeRowIndex, 
-  selectedPegIndex, 
-  onPegClick, 
+  onPegColorChange, 
   gameState
 }) => {
   
@@ -54,8 +52,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
           <GuessRow
             pegs={rowPegs}
             isCurrent={isRowActive}
-            selectedPegIndex={isRowActive ? selectedPegIndex : null}
-            onPegClick={isRowActive ? onPegClick : undefined}
+            onPegColorChange={isRowActive ? onPegColorChange : undefined}
           />
         </div>
         {/* Placeholder for feedback alignment */}

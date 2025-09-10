@@ -1,17 +1,17 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { GameState, Guess, Feedback } from './types';
 import { CODE_LENGTH, MAX_ATTEMPTS, COLOR_NAMES } from './constants';
 import GameBoard from './components/GameBoard';
 import GameControls from './components/GameControls';
 import Modal from './components/Modal';
 import Settings from './components/Settings';
+import ThinkingPad from './components/ThinkingPad';
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.SETTINGS);
   const [secretCode, setSecretCode] = useState<string[]>([]);
   const [guesses, setGuesses] = useState<Guess[]>([]);
   const [currentGuess, setCurrentGuess] = useState<(string | null)[]>(Array(CODE_LENGTH).fill(null));
-  const [selectedPegIndex, setSelectedPegIndex] = useState<number | null>(null);
   
   const generateSecretCode = useCallback((allowRepeats: boolean) => {
     const code: string[] = [];
@@ -33,12 +33,10 @@ const App: React.FC = () => {
     setGameState(GameState.PLAYING);
     setGuesses([]);
     setCurrentGuess(Array(CODE_LENGTH).fill(null));
-    setSelectedPegIndex(0); // Select the first peg automatically
   }, [generateSecretCode]);
 
   const handleResetGame = useCallback(() => {
     setGameState(GameState.SETTINGS);
-    setSelectedPegIndex(null);
   }, []);
 
   const calculateFeedback = useCallback((guess: string[], code: string[]): Feedback => {
@@ -86,7 +84,6 @@ const App: React.FC = () => {
     const newGuesses = [...guesses, { pegs: submittedGuess, feedback }];
     setGuesses(newGuesses);
     setCurrentGuess(Array(CODE_LENGTH).fill(null));
-    setSelectedPegIndex(0); // Select first peg of the new row
 
     if (feedback.black === CODE_LENGTH) {
       setGameState(GameState.WON);
@@ -95,34 +92,13 @@ const App: React.FC = () => {
     }
   }, [currentGuess, secretCode, guesses, calculateFeedback]);
 
-  const handlePegClick = useCallback((index: number) => {
-    if (guesses.length >= MAX_ATTEMPTS) return;
-    setSelectedPegIndex(index);
-  }, [guesses.length]);
-
-  const handleColorPaletteSelect = useCallback((color: string) => {
-    if (selectedPegIndex === null || gameState !== GameState.PLAYING) return;
-
+  const handlePegColorChange = useCallback((pegIndex: number, color: string) => {
+    if (gameState !== GameState.PLAYING) return;
     const newGuess = [...currentGuess];
-    newGuess[selectedPegIndex] = color;
+    newGuess[pegIndex] = color;
     setCurrentGuess(newGuess);
-
-    // Advance to the next peg automatically
-    if (selectedPegIndex < CODE_LENGTH - 1) {
-      setSelectedPegIndex(selectedPegIndex + 1);
-    } else {
-      setSelectedPegIndex(null); // Deselect after filling the last peg
-    }
-  }, [currentGuess, selectedPegIndex, gameState]);
+  }, [currentGuess, gameState]);
   
-  useEffect(() => {
-    // Ensure a peg is selected if the row is incomplete and no peg is currently selected
-    if (gameState === GameState.PLAYING && selectedPegIndex === null && currentGuess.some(c => c === null)) {
-      const firstEmpty = currentGuess.findIndex(c => c === null);
-      setSelectedPegIndex(firstEmpty !== -1 ? firstEmpty : 0);
-    }
-  }, [currentGuess, selectedPegIndex, gameState]);
-
   const attemptNumber = useMemo(() => guesses.length + 1, [guesses]);
   const isSubmitDisabled = useMemo(() => currentGuess.some(peg => peg === null) || gameState !== GameState.PLAYING, [currentGuess, gameState]);
 
@@ -148,20 +124,19 @@ const App: React.FC = () => {
                 guesses={guesses}
                 currentGuess={currentGuess}
                 activeRowIndex={guesses.length}
-                selectedPegIndex={selectedPegIndex}
-                onPegClick={handlePegClick}
+                onPegColorChange={handlePegColorChange}
                 gameState={gameState}
               />
             </div>
           </div>
           
-          {/* Right Column: Controls */}
-          <div className="w-full md:w-64 flex-shrink-0">
+          {/* Right Column: Controls & Scratchpad */}
+          <div className="w-full md:w-64 flex-shrink-0 flex flex-col gap-8">
+            <ThinkingPad />
             <GameControls
               onSubmit={handleSubmitGuess}
               onReset={handleResetGame}
               isSubmitDisabled={isSubmitDisabled}
-              onColorSelect={handleColorPaletteSelect}
             />
           </div>
         </main>
