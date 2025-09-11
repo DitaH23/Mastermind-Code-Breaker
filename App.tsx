@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { GameState, Guess, Feedback } from './types';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { GameState, Guess, Feedback, GameResult } from './types';
 import { CODE_LENGTH, MAX_ATTEMPTS, COLOR_NAMES } from './constants';
 import GameBoard from './components/GameBoard';
 import GameControls from './components/GameControls';
@@ -12,6 +12,34 @@ const App: React.FC = () => {
   const [secretCode, setSecretCode] = useState<string[]>([]);
   const [guesses, setGuesses] = useState<Guess[]>([]);
   const [currentGuess, setCurrentGuess] = useState<(string | null)[]>(Array(CODE_LENGTH).fill(null));
+  const [time, setTime] = useState(0);
+  const [history, setHistory] = useState<GameResult[]>([]);
+
+  useEffect(() => {
+    try {
+      const savedHistory = localStorage.getItem('mastermindHistory');
+      if (savedHistory) {
+        setHistory(JSON.parse(savedHistory));
+      }
+    } catch (error) {
+      console.error("Failed to load history from localStorage", error);
+    }
+  }, []);
+  
+  useEffect(() => {
+    // FIX: Changed NodeJS.Timeout to ReturnType<typeof setInterval> for browser compatibility.
+    let timerId: ReturnType<typeof setInterval> | undefined;
+    if (gameState === GameState.PLAYING) {
+      timerId = setInterval(() => {
+        setTime(prevTime => prevTime + 1);
+      }, 1000);
+    }
+    return () => {
+      if (timerId) {
+        clearInterval(timerId);
+      }
+    };
+  }, [gameState]);
   
   const generateSecretCode = useCallback((allowRepeats: boolean) => {
     const code: string[] = [];
@@ -33,10 +61,43 @@ const App: React.FC = () => {
     setGameState(GameState.PLAYING);
     setGuesses([]);
     setCurrentGuess(Array(CODE_LENGTH).fill(null));
+    setTime(0);
   }, [generateSecretCode]);
 
   const handleResetGame = useCallback(() => {
     setGameState(GameState.SETTINGS);
+  }, []);
+
+  const handleSaveScore = useCallback((playerName: string) => {
+    if (gameState !== GameState.WON && gameState !== GameState.LOST) return;
+
+    const newResult: GameResult = {
+      id: Date.now(),
+      playerName,
+      outcome: gameState,
+      attempts: guesses.length,
+      time,
+      secretCode,
+      date: new Date().toISOString(),
+    };
+
+    const updatedHistory = [...history, newResult];
+    setHistory(updatedHistory);
+    try {
+      localStorage.setItem('mastermindHistory', JSON.stringify(updatedHistory));
+    } catch (error) {
+      console.error("Failed to save history to localStorage", error);
+    }
+    handleResetGame();
+  }, [gameState, guesses.length, time, secretCode, history, handleResetGame]);
+
+  const handleClearHistory = useCallback(() => {
+    setHistory([]);
+    try {
+      localStorage.removeItem('mastermindHistory');
+    } catch (error) {
+      console.error("Failed to clear history from localStorage", error);
+    }
   }, []);
 
   const calculateFeedback = useCallback((guess: string[], code: string[]): Feedback => {
@@ -98,12 +159,26 @@ const App: React.FC = () => {
     newGuess[pegIndex] = color;
     setCurrentGuess(newGuess);
   }, [currentGuess, gameState]);
+
+  const handleClearGuess = useCallback(() => {
+    if (gameState === GameState.PLAYING) {
+      setCurrentGuess(Array(CODE_LENGTH).fill(null));
+    }
+  }, [gameState]);
   
   const attemptNumber = useMemo(() => guesses.length + 1, [guesses]);
   const isSubmitDisabled = useMemo(() => currentGuess.some(peg => peg === null) || gameState !== GameState.PLAYING, [currentGuess, gameState]);
+  const isClearDisabled = useMemo(() => gameState !== GameState.PLAYING || currentGuess.every(peg => peg === null), [currentGuess, gameState]);
+
+
+  const formatTime = (totalSeconds: number) => {
+    const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+    const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+    return `${minutes}:${seconds}`;
+  };
 
   if (gameState === GameState.SETTINGS) {
-    return <Settings onStartGame={handleStartGame} />;
+    return <Settings onStartGame={handleStartGame} history={history} onClearHistory={handleClearHistory} />;
   }
 
   return (
@@ -111,9 +186,16 @@ const App: React.FC = () => {
       <div className="w-full max-w-6xl mx-auto flex flex-col h-full">
         <header className="text-center mb-6 flex-shrink-0">
           <h1 className="text-4xl md:text-5xl font-bold tracking-wider text-gray-900">Mastermind</h1>
-          <p className="text-gray-600">
-            {gameState === GameState.PLAYING ? `Attempt ${attemptNumber} of ${MAX_ATTEMPTS}` : 'Game Finished'}
-          </p>
+          <div className="flex justify-center items-center space-x-4 mt-1">
+            <p className="text-gray-600">
+              {gameState === GameState.PLAYING ? `Attempt ${attemptNumber} of ${MAX_ATTEMPTS}` : 'Game Finished'}
+            </p>
+            {(gameState === GameState.PLAYING || gameState === GameState.WON || gameState === GameState.LOST) &&
+              <p className="text-gray-800 font-mono bg-gray-200 px-3 py-1 rounded-md text-lg">
+                {formatTime(time)}
+              </p>
+            }
+          </div>
         </header>
 
         <main className="flex flex-col md:flex-row gap-8 flex-grow min-h-0">
@@ -136,7 +218,9 @@ const App: React.FC = () => {
             <GameControls
               onSubmit={handleSubmitGuess}
               onReset={handleResetGame}
+              onClear={handleClearGuess}
               isSubmitDisabled={isSubmitDisabled}
+              isClearDisabled={isClearDisabled}
             />
           </div>
         </main>
@@ -147,7 +231,9 @@ const App: React.FC = () => {
           gameState={gameState}
           secretCode={secretCode}
           onPlayAgain={handleResetGame}
+          onSaveScore={handleSaveScore}
           attempts={guesses.length}
+          time={time}
         />
       )}
     </div>

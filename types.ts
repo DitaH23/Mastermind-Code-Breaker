@@ -15,3 +15,13 @@ export enum GameState {
   WON = 'WON',
   LOST = 'LOST',
 }
+
+export interface GameResult {
+  id: number;
+  playerName: string;
+  outcome: 'WON' | 'LOST';
+  attempts: number;
+  time: number;
+  secretCode: string[];
+  date: string;
+}
