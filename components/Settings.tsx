@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { GameResult } from '../types';
 import GuessRow from './GuessRow';
+import GameStats from './GameStats';
 
 interface SettingsProps {
   onStartGame: (allowRepeats: boolean) => void;
@@ -87,9 +88,30 @@ const HistoryDisplay: React.FC<{ history: GameResult[], onClearHistory: () => vo
 
 const Settings: React.FC<SettingsProps> = ({ onStartGame, history, onClearHistory }) => {
   const [allowRepeats, setAllowRepeats] = useState<boolean>(true);
+  const [view, setView] = useState<'main' | 'history'>('main');
+
+  if (view === 'history') {
+    return (
+      <div className="min-h-screen bg-gray-100 text-gray-800 flex flex-col items-center justify-start p-4 font-sans space-y-8 py-8">
+        <div className="w-full max-w-3xl">
+          <button
+            onClick={() => setView('main')}
+            className="bg-white hover:bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg shadow-md transition-colors flex items-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+            Back to Game Setup
+          </button>
+        </div>
+        <GameStats history={history} />
+        <HistoryDisplay history={history} onClearHistory={onClearHistory} />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-100 text-gray-800 flex flex-col items-center justify-start p-4 font-sans space-y-8 py-8">
+    <div className="min-h-screen bg-gray-100 text-gray-800 flex flex-col items-center justify-center p-4 font-sans">
       <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full text-center">
         <h1 className="text-4xl font-bold mb-4 text-gray-900">Welcome to Mastermind</h1>
         <p className="text-gray-600 mb-8">Configure your game and start breaking the code.</p>
@@ -112,9 +134,16 @@ const Settings: React.FC<SettingsProps> = ({ onStartGame, history, onClearHistor
         >
           Start Game
         </button>
-      </div>
 
-      <HistoryDisplay history={history} onClearHistory={onClearHistory} />
+        {history.length > 0 && (
+            <button
+              onClick={() => setView('history')}
+              className="mt-4 w-full text-indigo-600 hover:text-indigo-800 font-bold py-2 px-6 rounded-lg text-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50"
+            >
+              View History & Stats
+            </button>
+        )}
+      </div>
     </div>
   );
 };
