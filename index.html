@@ -12,18 +12,18 @@
       }
     </style>
     
-    <!-- Load React and ReactDOM from CDN -->
+    <!-- Load React and ReactDOM from CDN. This makes them globally available. -->
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     
-    <!-- Load Babel for in-browser JSX/TSX transformation -->
+    <!-- Load Babel for in-browser JSX/TSX transformation. -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script type="importmap">
+<script type="importmap">
 {
   "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.1.1/",
     "react": "https://aistudiocdn.com/react@^19.1.1",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/"
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/"
   }
 }
 </script>
@@ -31,7 +31,7 @@
   <body>
     <div id="root"></div>
     
-    <!-- Babel will find this script and transpile it, including all imported .tsx files -->
-    <script type="text/babel" data-type="module" src="./index.tsx"></script>
+    <!-- Babel will find this script and transpile it. -->
+    <script type="text/babel" src="./index.tsx"></script>
   </body>
 </html>
