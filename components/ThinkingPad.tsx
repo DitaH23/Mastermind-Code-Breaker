@@ -1,32 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { COLORS, COLOR_NAMES } from '../constants';
+import { ColorState } from '../types';
 
-type ColorState = 'neutral' | 'in' | 'out';
+interface ThinkingPadProps {
+  colorStates: Record<string, ColorState>;
+  onColorStateChange: (color: string) => void;
+}
 
-const ThinkingPad: React.FC = () => {
-  const [colorStates, setColorStates] = useState<Record<string, ColorState>>(() => {
-    const initialState: Record<string, ColorState> = {};
-    COLOR_NAMES.forEach(color => {
-      initialState[color] = 'neutral';
-    });
-    return initialState;
-  });
-
-  const handleColorClick = (color: string) => {
-    setColorStates(prevStates => {
-      const currentState = prevStates[color];
-      let nextState: ColorState;
-      if (currentState === 'neutral') {
-        nextState = 'out'; // Neutral -> Out
-      } else if (currentState === 'out') {
-        nextState = 'in'; // Out -> In
-      } else {
-        nextState = 'neutral'; // In -> Neutral
-      }
-      return { ...prevStates, [color]: nextState };
-    });
-  };
-
+const ThinkingPad: React.FC<ThinkingPadProps> = ({ colorStates, onColorStateChange }) => {
   const instructionText = "Click to cycle: Neutral → Out ❌ → In ✅";
 
   return (
@@ -44,7 +25,7 @@ const ThinkingPad: React.FC = () => {
           return (
             <button
               key={color}
-              onClick={() => handleColorClick(color)}
+              onClick={() => onColorStateChange(color)}
               className={`relative w-10 h-10 rounded-full flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-opacity duration-200 ${colorClass} ${opacityClass}`}
               aria-label={`Mark color ${color} as ${state}`}
             >

@@ -1,4 +1,6 @@
 
+export type ColorState = 'neutral' | 'in' | 'out';
+
 export interface Feedback {
   black: number;
   white: number;

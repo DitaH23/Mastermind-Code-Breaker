@@ -6,6 +6,7 @@ interface GuessRowProps {
   pegs: (string | null)[];
   onPegColorChange?: (index: number, color: string) => void;
   isCurrent?: boolean;
+  availableColors?: string[];
 }
 
 const Peg: React.FC<{ color: string | null; onClick?: () => void; isCurrent?: boolean; }> = ({ color, onClick, isCurrent }) => {
@@ -28,7 +29,7 @@ const Peg: React.FC<{ color: string | null; onClick?: () => void; isCurrent?: bo
   );
 };
 
-const GuessRow: React.FC<GuessRowProps> = ({ pegs, onPegColorChange, isCurrent = false }) => {
+const GuessRow: React.FC<GuessRowProps> = ({ pegs, onPegColorChange, isCurrent = false, availableColors }) => {
   const [pickerForPeg, setPickerForPeg] = useState<number | null>(null);
   
   const displayPegs = Array(CODE_LENGTH).fill(null).map((_, i) => pegs[i] || null);
@@ -42,11 +43,14 @@ const GuessRow: React.FC<GuessRowProps> = ({ pegs, onPegColorChange, isCurrent =
             onClick={onPegColorChange ? () => setPickerForPeg(pickerForPeg === index ? null : index) : undefined}
             isCurrent={isCurrent}
           />
-          {pickerForPeg === index && onPegColorChange && (
-            <PegColorPicker onColorSelect={(selectedColor) => {
-              onPegColorChange(index, selectedColor);
-              setPickerForPeg(null);
-            }} />
+          {pickerForPeg === index && onPegColorChange && availableColors && (
+            <PegColorPicker 
+              onColorSelect={(selectedColor) => {
+                onPegColorChange(index, selectedColor);
+                setPickerForPeg(null);
+              }} 
+              availableColors={availableColors}
+            />
           )}
         </div>
       ))}

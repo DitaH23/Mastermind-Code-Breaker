@@ -10,6 +10,7 @@ interface GameBoardProps {
   activeRowIndex: number;
   onPegColorChange: (pegIndex: number, color: string) => void;
   gameState: GameState;
+  availableColors: string[];
 }
 
 const GameBoard: React.FC<GameBoardProps> = ({ 
@@ -17,7 +18,8 @@ const GameBoard: React.FC<GameBoardProps> = ({
   currentGuess, 
   activeRowIndex, 
   onPegColorChange, 
-  gameState
+  gameState,
+  availableColors
 }) => {
   
   const allRows = Array(MAX_ATTEMPTS).fill(null).map((_, rowIndex) => {
@@ -53,6 +55,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
             pegs={rowPegs}
             isCurrent={isRowActive}
             onPegColorChange={isRowActive ? onPegColorChange : undefined}
+            availableColors={isRowActive ? availableColors : undefined}
           />
         </div>
         {/* Placeholder for feedback alignment */}

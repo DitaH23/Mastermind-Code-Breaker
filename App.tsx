@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { GameState, Guess, Feedback, GameResult } from './types';
+import { GameState, Guess, Feedback, GameResult, ColorState } from './types';
 import { CODE_LENGTH, MAX_ATTEMPTS, COLOR_NAMES } from './constants';
 import GameBoard from './components/GameBoard';
 import GameControls from './components/GameControls';
@@ -15,6 +15,18 @@ const App: React.FC = () => {
   const [time, setTime] = useState(0);
   const [history, setHistory] = useState<GameResult[]>([]);
 
+  // State for the ThinkingPad/Scratchpad
+  const createInitialColorStates = useCallback(() => {
+    const initialState: Record<string, ColorState> = {};
+    COLOR_NAMES.forEach(color => {
+      initialState[color] = 'neutral';
+    });
+    return initialState;
+  }, []);
+  
+  const [colorStates, setColorStates] = useState<Record<string, ColorState>>(createInitialColorStates);
+
+
   useEffect(() => {
     try {
       const savedHistory = localStorage.getItem('mastermindHistory');
@@ -27,7 +39,6 @@ const App: React.FC = () => {
   }, []);
   
   useEffect(() => {
-    // FIX: Changed NodeJS.Timeout to ReturnType<typeof setInterval> for browser compatibility.
     let timerId: ReturnType<typeof setInterval> | undefined;
     if (gameState === GameState.PLAYING) {
       timerId = setInterval(() => {
@@ -62,7 +73,8 @@ const App: React.FC = () => {
     setGuesses([]);
     setCurrentGuess(Array(CODE_LENGTH).fill(null));
     setTime(0);
-  }, [generateSecretCode]);
+    setColorStates(createInitialColorStates()); // Reset scratchpad
+  }, [generateSecretCode, createInitialColorStates]);
 
   const handleResetGame = useCallback(() => {
     setGameState(GameState.SETTINGS);
@@ -166,9 +178,27 @@ const App: React.FC = () => {
     }
   }, [gameState]);
   
+  const handleColorStateChange = useCallback((color: string) => {
+    setColorStates(prevStates => {
+      const currentState = prevStates[color];
+      let nextState: ColorState;
+      if (currentState === 'neutral') {
+        nextState = 'out'; // Neutral -> Out
+      } else if (currentState === 'out') {
+        nextState = 'in'; // Out -> In
+      } else {
+        nextState = 'neutral'; // In -> Neutral
+      }
+      return { ...prevStates, [color]: nextState };
+    });
+  }, []);
+
   const attemptNumber = useMemo(() => guesses.length + 1, [guesses]);
   const isSubmitDisabled = useMemo(() => currentGuess.some(peg => peg === null) || gameState !== GameState.PLAYING, [currentGuess, gameState]);
   const isClearDisabled = useMemo(() => gameState !== GameState.PLAYING || currentGuess.every(peg => peg === null), [currentGuess, gameState]);
+  const availableColors = useMemo(() => {
+    return COLOR_NAMES.filter(color => colorStates[color] !== 'out');
+  }, [colorStates]);
 
 
   const formatTime = (totalSeconds: number) => {
@@ -208,13 +238,17 @@ const App: React.FC = () => {
                 activeRowIndex={guesses.length}
                 onPegColorChange={handlePegColorChange}
                 gameState={gameState}
+                availableColors={availableColors}
               />
             </div>
           </div>
           
           {/* Right Column: Controls & Scratchpad */}
           <div className="w-full md:w-64 flex-shrink-0 flex flex-col gap-8">
-            <ThinkingPad />
+            <ThinkingPad 
+              colorStates={colorStates}
+              onColorStateChange={handleColorStateChange}
+            />
             <GameControls
               onSubmit={handleSubmitGuess}
               onReset={handleResetGame}
